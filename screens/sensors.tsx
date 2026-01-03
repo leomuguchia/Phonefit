@@ -1,8 +1,12 @@
+// Screens/SensorsScreen.js
 import React from 'react';
 import { ScrollView, View, Text, StyleSheet } from 'react-native';
 import { useDevice } from '../utils/deviceInfo';
 import SensorCard from '../components/sensor';
+import StepTracker from '../components/stepTracker';
 import { colors } from '../constants/colors';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+const IconsComponent = Ionicons as any;
 
 const SensorsScreen = () => {
   const { capabilities } = useDevice();
@@ -17,9 +21,14 @@ const SensorsScreen = () => {
 
   const availableSensors = capabilities.sensors.filter(s => s.available);
   const unavailableSensors = capabilities.sensors.filter(s => !s.available);
+  
+  // Check if device has accelerometer (for step detection)
+  const hasAccelerometer = availableSensors.some(s => 
+    s.name.toLowerCase().includes('accelerometer')
+  );
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <Text style={styles.title}>Phone Sensors</Text>
         <Text style={styles.subtitle}>What your phone can sense about the world</Text>
@@ -41,7 +50,22 @@ const SensorsScreen = () => {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Available Sensors</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Live Demos</Text>
+          <Text style={styles.sectionSubtitle}>Interactive sensor utilities</Text>
+        </View>
+        
+        {/* Step Tracker - Show if accelerometer is available */}
+        {hasAccelerometer && <StepTracker />}
+        
+        {/* Available Sensors */}
+        <View style={styles.sensorsHeader}>
+          <Text style={styles.sensorsTitle}>Available Sensors</Text>
+          <View style={styles.sensorsCountBadge}>
+            <Text style={styles.sensorsCount}>{availableSensors.length}</Text>
+          </View>
+        </View>
+        
         {availableSensors.length > 0 ? (
           availableSensors.map((sensor, index) => (
             <SensorCard
@@ -61,10 +85,12 @@ const SensorsScreen = () => {
 
       {unavailableSensors.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Other Capabilities</Text>
-          <Text style={styles.sectionSubtitle}>
-            These features aren't available on your device
-          </Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Other Capabilities</Text>
+            <Text style={styles.sectionSubtitle}>
+              These features aren't available on your device
+            </Text>
+          </View>
           {unavailableSensors.map((sensor, index) => (
             <SensorCard
               key={index}
@@ -78,11 +104,23 @@ const SensorsScreen = () => {
       )}
 
       <View style={styles.infoBox}>
-        <Text style={styles.infoTitle}>How sensors help you</Text>
+        <View style={styles.infoHeader}>
+          <IconsComponent name="information-circle" size={20} color={colors.primary} />
+          <Text style={styles.infoTitle}>How Sensors Work</Text>
+        </View>
         <Text style={styles.infoText}>
-          Sensors make your phone smarter. They enable features like automatic screen rotation, 
-          step counting, navigation, secure unlocking, and adaptive brightness.
+          Your phone uses sensors to detect motion, orientation, light, and more. 
+          These enable features like auto-rotation, step counting, and adaptive brightness.
         </Text>
+        
+        {hasAccelerometer && (
+          <View style={styles.tipContainer}>
+            <IconsComponent name="walk-outline" size={16} color={colors.success} />
+            <Text style={styles.tipText}>
+              Use the Step Tracker above to test your phone's motion sensing capabilities.
+            </Text>
+          </View>
+        )}
       </View>
     </ScrollView>
   );
@@ -103,7 +141,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondary,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
-    paddingTop:50,
+    paddingTop: 50,
   },
   title: {
     fontSize: 28,
@@ -134,20 +172,45 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   section: {
-    marginTop: 24,
+    marginTop: 16,
+  },
+  sectionHeader: {
+    marginBottom: 12,
+    paddingHorizontal: 16,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
     color: colors.text,
-    marginLeft: 16,
-    marginBottom: 12,
+    marginBottom: 4,
   },
   sectionSubtitle: {
     fontSize: 14,
     color: colors.textSecondary,
-    marginLeft: 16,
+  },
+  sensorsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 20,
     marginBottom: 12,
+  },
+  sensorsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  sensorsCountBadge: {
+    backgroundColor: colors.primary + '20',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  sensorsCount: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.primary,
   },
   emptyState: {
     backgroundColor: colors.cardBackground,
@@ -167,17 +230,39 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderLeftWidth: 4,
     borderLeftColor: colors.primary,
+    marginBottom: 24,
+  },
+  infoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
   },
   infoTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 8,
   },
   infoText: {
     fontSize: 14,
     color: colors.textSecondary,
     lineHeight: 20,
+    marginBottom: 12,
+  },
+  tipContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.success + '10',
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  tipText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    flex: 1,
+    lineHeight: 16,
   },
 });
 

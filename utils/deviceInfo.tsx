@@ -104,17 +104,83 @@ export const DeviceProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return { batteryLevel, batteryState };
   }, []);
 
+  // Helper function to check pedometer availability
+  const checkPedometerAvailability = useCallback(async (): Promise<boolean> => {
+    try {
+      // First try to use expo-sensors Pedometer if available
+      const { Pedometer } = require('expo-sensors');
+      console.log('🔍 Checking Pedometer availability via expo-sensors...');
+      console.log('📡 Expo Pedometer module found:', Pedometer != null);
+      
+      if (Pedometer && typeof Pedometer.isAvailableAsync === 'function') {
+        try {
+          const isAvailable = await Pedometer.isAvailableAsync();
+          console.log('✅ Pedometer availability (expo-sensors):', isAvailable);
+          return isAvailable;
+        } catch (pedometerError) {
+          console.log('⚠️ Pedometer.isAvailableAsync failed:', pedometerError);
+        }
+      }
+    } catch (error) {
+      console.log('ℹ️ Expo Pedometer module not available:', error);
+    }
+    
+    // Fallback to device heuristics
+    const model = Device.modelName || '';
+    const brand = Device.brand || '';
+    
+    console.log('🔍 Checking pedometer heuristics for:', { model, brand });
+    
+    // Exclude very basic/low-end models
+    const isBasicModel = model.match(/lite|a[0-9]|e[0-9]|j[2-7]|core|prime|go|play|zenfone c|redmi go|galaxy j|galaxy core/i);
+    const isOldModel = model.match(/galaxy s[3-6]|iphone [4-6]|nexus [4-5]/i);
+    const isFeaturePhone = model.match(/nokia [1-9]00|3310|105|150/i);
+    
+    const isModernSmartphone = !isBasicModel && !isOldModel && !isFeaturePhone;
+    
+    // Check if device has accelerometer (prerequisite for step counting)
+    let hasAccelerometer = false;
+    try {
+      hasAccelerometer = await Sensors.Accelerometer.isAvailableAsync();
+    } catch (error) {
+      hasAccelerometer = true; // Assume true for heuristic
+    }
+    
+    const result = isModernSmartphone && hasAccelerometer;
+    console.log('📊 Pedometer heuristic result:', {
+      isModernSmartphone,
+      hasAccelerometer,
+      finalResult: result
+    });
+    
+    return result;
+  }, []);
+
   const getSensorInfo = useCallback(async (deviceModel: string) => {
     let hasGyroscope = false;
     let hasAccelerometer = false;
+    let hasPedometer = false;
     
     try {
+      // Check standard sensors
       hasGyroscope = await Sensors.Gyroscope.isAvailableAsync();
       hasAccelerometer = await Sensors.Accelerometer.isAvailableAsync();
+      
+      // Check for pedometer availability
+      hasPedometer = await checkPedometerAvailability();
+      
+      console.log('📡 Sensor availability:', {
+        gyroscope: hasGyroscope,
+        accelerometer: hasAccelerometer,
+        pedometer: hasPedometer
+      });
+      
     } catch (sensorError) {
       console.warn('Sensor detection failed:', sensorError);
       hasGyroscope = !deviceModel?.match(/lite|a[0-9]|e[0-9]/i);
       hasAccelerometer = true;
+      // Most modern smartphones have step counting capability
+      hasPedometer = !deviceModel?.match(/lite|a[0-9]|e[0-9]|basic/i);
     }
 
     let sensors: { name: string; available: boolean; benefit: string; icon: string; }[] = [];
@@ -128,17 +194,54 @@ export const DeviceProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           return { ...sensor, available: false };
         }
       }));
+      
+      // Add pedometer sensor to the list if not already there
+      const hasPedometerInList = sensors.some(s => 
+        s.name.toLowerCase().includes('pedometer') || 
+        s.name.toLowerCase().includes('step')
+      );
+      
+      if (!hasPedometerInList) {
+        sensors.push({
+          name: 'Pedometer',
+          available: hasPedometer,
+          benefit: 'Step counting and activity tracking',
+          icon: 'footsteps',
+        });
+        
+        // Also add Step Counter as an alias
+        sensors.push({
+          name: 'Step Counter',
+          available: hasPedometer,
+          benefit: 'Daily activity monitoring',
+          icon: 'walk',
+        });
+      } else {
+        // Update existing pedometer/step counter sensors
+        sensors = sensors.map(sensor => {
+          if (sensor.name.toLowerCase().includes('pedometer') || 
+              sensor.name.toLowerCase().includes('step')) {
+            return { ...sensor, available: hasPedometer };
+          }
+          return sensor;
+        });
+      }
+      
+      console.log('✅ Final sensor list:', sensors.map(s => `${s.name}: ${s.available}`));
+      
     } catch (sensorError) {
       console.warn('Sensor detection failed:', sensorError);
       sensors = [
         { name: 'Accelerometer', available: hasAccelerometer, benefit: 'Motion detection', icon: 'move' },
         { name: 'Gyroscope', available: hasGyroscope, benefit: 'Rotation sensing', icon: 'refresh' },
         { name: 'Magnetometer', available: false, benefit: 'Compass functionality', icon: 'compass' },
+        { name: 'Pedometer', available: hasPedometer, benefit: 'Step counting', icon: 'footsteps' },
+        { name: 'Step Counter', available: hasPedometer, benefit: 'Daily activity monitoring', icon: 'walk' },
       ];
     }
 
-    return { hasGyroscope, sensors };
-  }, []);
+    return { hasGyroscope, sensors, hasPedometer };
+  }, [checkPedometerAvailability]);
 
   const getCapabilities = useCallback((
     info: DeviceInfo, 
@@ -184,8 +287,8 @@ export const DeviceProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         storage: {
           total: runtime.totalStorage,
           free: runtime.freeStorage,
-          used: runtime.usedStorage,  // Now using runtime.usedStorage
-          humanReadable: humanReadable,  // Use the calculated human readable
+          used: runtime.usedStorage,
+          humanReadable: humanReadable,
           percentageFree: (runtime.freeStorage / runtime.totalStorage) * 100
         },
         sensors,
@@ -234,8 +337,8 @@ export const DeviceProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         storage: {
           total: runtime.totalStorage,
           free: runtime.freeStorage,
-          used: runtime.usedStorage,  // Now using runtime.usedStorage
-          humanReadable: humanReadable,  // Use the calculated human readable
+          used: runtime.usedStorage,
+          humanReadable: humanReadable,
           percentageFree: (runtime.freeStorage / runtime.totalStorage) * 100
         },
         sensors,
@@ -259,15 +362,16 @@ export const DeviceProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const { freeStorage, totalStorage, usedStorage } = await getStorageInfo();
       
       // 4. Get sensor info
-      const { hasGyroscope, sensors } = await getSensorInfo(info.model);
+      const { hasGyroscope, sensors, hasPedometer } = await getSensorInfo(info.model);
       
       // 5. Create runtime signals
       const runtime: RuntimeSignals = {
         batteryLevel,
         freeStorage,
         totalStorage,
-        usedStorage,  // Add this
+        usedStorage,
         hasGyroscope,
+        hasPedometer, // Add pedometer availability
         batteryState: batteryState || 'unknown'
       };
       setRuntimeSignals(runtime);
@@ -283,6 +387,15 @@ export const DeviceProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         totalGB: (totalStorage / (1024 * 1024 * 1024)).toFixed(2),
         usedGB: (usedStorage / (1024 * 1024 * 1024)).toFixed(2),
         freePercentage: ((freeStorage / totalStorage) * 100).toFixed(1) + '%'
+      });
+      
+      // Log pedometer status
+      console.log('👟 Pedometer status:', {
+        hasPedometer,
+        inSensors: caps.sensors?.some(s => 
+          (s.name.toLowerCase().includes('pedometer') || s.name.toLowerCase().includes('step')) && 
+          s.available
+        )
       });
       
     } catch (error) {
@@ -336,10 +449,14 @@ export const DeviceProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           total,
           free,
           used,
-          humanReadable,  // Now includes movies, photos, apps
+          humanReadable,
           percentageFree: 50
         },
-        sensors: [],
+        sensors: [
+          { name: 'Accelerometer', available: true, benefit: 'Motion detection', icon: 'move' },
+          { name: 'Pedometer', available: true, benefit: 'Step counting', icon: 'footsteps' },
+          { name: 'Step Counter', available: true, benefit: 'Daily activity monitoring', icon: 'walk' },
+        ],
         dailyUsage: {
           pattern: 'Moderate',
           description: 'Average smartphone usage',

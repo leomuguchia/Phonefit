@@ -89,6 +89,7 @@ export interface RuntimeSignals {
   hasGyroscope: boolean;
   batteryState: BatteryState;
   usedStorage: number;
+  hasPedometer: boolean;
 }
 
 export interface DeviceContextType {

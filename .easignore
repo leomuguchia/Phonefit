@@ -1,0 +1,36 @@
+# Ignore node_modules (EAS installs deps itself)
+node_modules/
+
+# Ignore git history
+.git/
+
+# Ignore build artifacts
+android/build/
+android/app/build/
+android/app/.cxx
+ios/build/
+build/
+.gradle/
+.expo/
+.expo-shared/
+release/
+
+# Ignore CocoaPods lock and workspace (EAS will regenerate)
+ios/Podfile.lock
+ios/Pods/
+ios/*.xcworkspace
+
+# Ignore IDE/editor files
+.vscode/
+.idea/
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore test coverage/output
+coverage/
+dist/
+
+# my stuff
+notes.txt
