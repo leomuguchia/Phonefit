@@ -1,0 +1,94 @@
+apply plugin: "com.android.application"
+apply plugin: "org.jetbrains.kotlin.android"
+apply plugin: "com.facebook.react"
+
+def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
+
+react {
+    entryFile = file(["node", "-e", "require('expo/scripts/resolveAppEntry')", projectRoot, "android", "absolute"].execute(null, rootDir).text.trim())
+    reactNativeDir = new File(["node", "--print", "require.resolve('react-native/package.json')"].execute(null, rootDir).text.trim()).getParentFile().getAbsoluteFile()
+    hermesCommand = new File(["node", "--print", "require.resolve('react-native/package.json')"].execute(null, rootDir).text.trim()).getParentFile().getAbsolutePath() + "/sdks/hermesc/%OS-BIN%/hermesc"
+    codegenDir = new File(["node", "--print", "require.resolve('@react-native/codegen/package.json', { paths: [require.resolve('react-native/package.json')] })"].execute(null, rootDir).text.trim()).getParentFile().getAbsoluteFile()
+    enableBundleCompression = (findProperty('android.enableBundleCompression') ?: false).toBoolean()
+    cliFile = new File(["node", "--print", "require.resolve('@expo/cli', { paths: [require.resolve('expo/package.json')] })"].execute(null, rootDir).text.trim())
+    bundleCommand = "export:embed"
+    autolinkLibrariesWithApp()
+}
+
+def enableMinifyInReleaseBuilds = true
+def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
+
+android {
+    compileSdkVersion rootProject.ext.compileSdkVersion
+    buildToolsVersion rootProject.ext.buildToolsVersion
+    ndkVersion rootProject.ext.ndkVersion
+    namespace 'com.leomuguchia.Phonefit'
+
+    defaultConfig {
+        applicationId 'com.leomuguchia.Phonefit'
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 1
+        versionName "1.0.0"
+        buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
+
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+        }
+    }
+
+    signingConfigs {
+        debug {
+            storeFile file('debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+            minifyEnabled false
+            shrinkResources false
+        }
+        release {
+            signingConfig signingConfigs.debug
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+        }
+    }
+
+    splits {
+        abi {
+            enable false
+        }
+    }
+
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging false
+        }
+    }
+}
+
+dependencies {
+    implementation("com.facebook.react:react-android")
+
+    if ((findProperty('expo.gif.enabled') ?: "") == "true") {
+        implementation("com.facebook.fresco:animated-gif:${expoLibs.versions.fresco.get()}")
+    }
+    if ((findProperty('expo.webp.enabled') ?: "") == "true") {
+        implementation("com.facebook.fresco:webpsupport:${expoLibs.versions.fresco.get()}")
+        if ((findProperty('expo.webp.animated') ?: "") == "true") {
+            implementation("com.facebook.fresco:animated-webp:${expoLibs.versions.fresco.get()}")
+        }
+    }
+
+    if (hermesEnabled.toBoolean()) {
+        implementation("com.facebook.react:hermes-android")
+    } else {
+        implementation jscFlavor
+    }
+}

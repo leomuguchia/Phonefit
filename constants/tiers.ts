@@ -1,0 +1,67 @@
+export const TIERS = {
+  1: {
+    name: 'Minimal',
+    color: '#EF4444',
+    description: 'Basic calls & messaging',
+    sentence: 'Your phone handles basic tasks like calls and messages.',
+    score: 10,
+  },
+  2: {
+    name: 'Everyday',
+    color: '#F97316',
+    description: 'Social apps, browsing, light use',
+    sentence: 'Perfect for social media, web browsing, and everyday apps.',
+    score: 20,
+  },
+  3: {
+    name: 'Comfortable',
+    color: '#EAB308',
+    description: 'Smooth daily use, multitasking OK',
+    sentence: 'Smooth experience with basic multitasking and media.',
+    score: 35,
+  },
+  4: {
+    name: 'Capable',
+    color: '#84CC16',
+    description: 'Media and casual gaming comfortable',
+    sentence: 'Great for streaming, casual gaming, and productivity.',
+    score: 50,
+  },
+  5: {
+    name: 'Strong',
+    color: '#10B981',
+    description: 'Popular games run with reduced graphics',
+    sentence: 'Handles popular games well and runs demanding apps smoothly.',
+    score: 70,
+  },
+  6: {
+    name: 'Very Strong',
+    color: '#0EA5E9',
+    description: 'Heavy apps and high-demand games run well',
+    sentence: 'Excellent for gaming, video editing, and intensive apps.',
+    score: 85,
+  },
+  7: {
+    name: 'Flagship',
+    color: '#8B5CF6',
+    description: 'No compromises; top-tier performance',
+    sentence: 'Top-tier performance for everything, no compromises.',
+    score: 100,
+  },
+};
+
+export const SENSOR_BENEFITS = {
+  accelerometer: 'Your phone understands motion and orientation',
+  gyroscope: 'Your phone senses rotation and tilt precisely',
+  magnetometer: 'Your phone knows which way you\'re facing',
+  barometer: 'Your phone can measure altitude and pressure changes',
+  lightSensor: 'Your phone adjusts brightness to your environment',
+  proximitySensor: 'Your phone knows when it\'s near your face or pocket',
+  fingerprint: 'Your phone can recognize you securely with a touch',
+  faceUnlock: 'Your phone can recognize you with a glance',
+  gps: 'Your phone understands where you are for maps and navigation',
+  nfc: 'Your phone can connect with other devices and make contactless payments',
+  bluetooth: 'Your phone connects to headphones, speakers, and other devices',
+  wifiDirect: 'Your phone can share files quickly without internet',
+  irBlaster: 'Your phone can control TVs and other infrared devices',
+};
